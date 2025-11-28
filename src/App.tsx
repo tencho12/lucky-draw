@@ -103,6 +103,9 @@ const spinWheel = () => {
 
     const selected = numbers[winningIndex];
     setWinner(selected);
+
+    // ✅ REMOVE winner from pool so it CANNOT win again
+    setNumbers(prev => prev.filter((_, i) => i !== winningIndex));
     setSpinning(false);
 
     setShowWinnerModal(true);
