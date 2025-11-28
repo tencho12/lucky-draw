@@ -29,6 +29,7 @@ export default function App() {
   const [spinCount, setSpinCount] = useState(0);
   const [showWinnerModal, setShowWinnerModal] = useState(false);
   const SPIN_DURATION = 25000; // 10 seconds in ms
+  const [currentPointerNumber, setCurrentPointerNumber] = useState<string | null>(null);
 
   const wheelRef = useRef<SVGGElement>(null);
 
@@ -71,47 +72,50 @@ export default function App() {
 const spinWheel = () => {
   if (!wheelRef.current || numbers.length === 0 || spinning) return;
 
-  // reset for new spin
   setSpinning(true);
   setWinner(null);
   setShowWinnerModal(false);
+  setCurrentPointerNumber(null);
 
   const sliceAngle = 360 / numbers.length;
-
-  // 🎯 pick winner index FIRST
   const winningIndex = Math.floor(Math.random() * numbers.length);
 
-  // mid-angle of that slice (0° = top)
   const midAngle = winningIndex * sliceAngle + sliceAngle / 2;
-
-  // rotate so that slice center lands at top (pointer)
   const stopAngle = 360 - midAngle;
 
-  // add full rotations to make it exciting
   const newSpinCount = spinCount + 1;
-  const fullSpins = newSpinCount * 360 * 6; // 6 full turns per spin
+  const fullSpins = newSpinCount * 360 * 6;
   const finalRotation = fullSpins + stopAngle;
 
-  // animate for SPIN_DURATION ms
   wheelRef.current.style.transition =
     `transform ${SPIN_DURATION}ms cubic-bezier(0.15, 0.85, 0.1, 1)`;
   wheelRef.current.style.transform = `rotate(${finalRotation}deg)`;
 
-  // wait exactly SPIN_DURATION ms before deciding winner + showing modal
+  // ✅ LIVE POINTER UPDATE DURING SPIN
+  const pointerInterval = setInterval(() => {
+    const randomIndex = Math.floor(Math.random() * numbers.length);
+    setCurrentPointerNumber(numbers[randomIndex]);
+  }, 80);
+
   setTimeout(() => {
+    clearInterval(pointerInterval);
+
     setSpinCount(newSpinCount);
 
     const selected = numbers[winningIndex];
     setWinner(selected);
 
-    // ✅ REMOVE winner from pool so it CANNOT win again
+    // ✅ REMOVE winner from pool
     setNumbers(prev => prev.filter((_, i) => i !== winningIndex));
+
     setSpinning(false);
+    setCurrentPointerNumber(selected); // ✅ Final lock
 
     setShowWinnerModal(true);
     launchConfetti();
   }, SPIN_DURATION);
 };
+
 
 
   const polarToCartesian = (angle: number, r: number) => {
@@ -139,7 +143,7 @@ const spinWheel = () => {
     if (numbers.length <= 30) return 11;
     if (numbers.length <= 50) return 9;
     if (numbers.length <= 80) return 7;
-    return 8;
+    return 4;
   };
 
   const formatNumber = (num: string | null) => {
@@ -157,6 +161,13 @@ const spinWheel = () => {
       <p className="participant-count">
         Total Participants: {numbers.length}
       </p>
+
+       {/* ✅ LIVE POINTER DISPLAY */}
+            <div className="pointer-display">
+              {currentPointerNumber
+                ? formatNumber(currentPointerNumber)
+                : "READY"}
+            </div>
 
       {loading && <p>Loading participants…</p>}
 
@@ -217,7 +228,6 @@ const spinWheel = () => {
                 })}
               </g>
             </svg>
-
             <div className="pointer">▼</div>
           </div>
 
