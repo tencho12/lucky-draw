@@ -28,6 +28,7 @@ export default function App() {
   const [winner, setWinner] = useState<string | null>(null);
   const [spinCount, setSpinCount] = useState(0);
   const [showWinnerModal, setShowWinnerModal] = useState(false);
+  const SPIN_DURATION = 25000; // 10 seconds in ms
 
   const wheelRef = useRef<SVGGElement>(null);
 
@@ -67,42 +68,48 @@ export default function App() {
     setShowWinnerModal(false);
   }, []);
 
-  const spinWheel = () => {
-    if (!wheelRef.current || numbers.length === 0 || spinning) return;
+const spinWheel = () => {
+  if (!wheelRef.current || numbers.length === 0 || spinning) return;
 
-    // reset state for new spin
-    setSpinning(true);
-    setWinner(null);
-    setShowWinnerModal(false);
+  // reset for new spin
+  setSpinning(true);
+  setWinner(null);
+  setShowWinnerModal(false);
 
-    const sliceAngle = 360 / numbers.length;
+  const sliceAngle = 360 / numbers.length;
 
-    // 🎯 pick winner index FIRST
-    const winningIndex = Math.floor(Math.random() * numbers.length);
+  // 🎯 pick winner index FIRST
+  const winningIndex = Math.floor(Math.random() * numbers.length);
 
-    const midAngle = winningIndex * sliceAngle + sliceAngle / 2;
-    const stopAngle = 360 - midAngle;
+  // mid-angle of that slice (0° = top)
+  const midAngle = winningIndex * sliceAngle + sliceAngle / 2;
 
-    const newSpinCount = spinCount + 1;
-    const fullSpins = newSpinCount * 360 * 6; // 6 full turns each time
-    const finalRotation = fullSpins + stopAngle;
+  // rotate so that slice center lands at top (pointer)
+  const stopAngle = 360 - midAngle;
 
-    wheelRef.current.style.transition =
-      "transform 6s cubic-bezier(0.15, 0.85, 0.1, 1)";
-    wheelRef.current.style.transform = `rotate(${finalRotation}deg)`;
+  // add full rotations to make it exciting
+  const newSpinCount = spinCount + 1;
+  const fullSpins = newSpinCount * 360 * 6; // 6 full turns per spin
+  const finalRotation = fullSpins + stopAngle;
 
-    setTimeout(() => {
-      setSpinCount(newSpinCount);
+  // animate for SPIN_DURATION ms
+  wheelRef.current.style.transition =
+    `transform ${SPIN_DURATION}ms cubic-bezier(0.15, 0.85, 0.1, 1)`;
+  wheelRef.current.style.transform = `rotate(${finalRotation}deg)`;
 
-      const selected = numbers[winningIndex];
-      setWinner(selected);
-      setSpinning(false);
+  // wait exactly SPIN_DURATION ms before deciding winner + showing modal
+  setTimeout(() => {
+    setSpinCount(newSpinCount);
 
-      // show modal + confetti every time
-      setShowWinnerModal(true);
-      launchConfetti();
-    }, 6000);
-  };
+    const selected = numbers[winningIndex];
+    setWinner(selected);
+    setSpinning(false);
+
+    setShowWinnerModal(true);
+    launchConfetti();
+  }, SPIN_DURATION);
+};
+
 
   const polarToCartesian = (angle: number, r: number) => {
     const rad = ((angle - 90) * Math.PI) / 180;
