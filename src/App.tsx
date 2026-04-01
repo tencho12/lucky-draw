@@ -49,7 +49,10 @@ export default function App() {
         .filter((v: any) => v !== null && v !== undefined)
         .map((v: any) => String(v));
 
-      setNumbers(list);
+      // Filter for unique phone numbers
+      const uniqueList = Array.from(new Set(list));
+
+      setNumbers(uniqueList);
     } catch (err) {
       console.error("Sheet load error:", err);
     } finally {
